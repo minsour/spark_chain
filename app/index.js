@@ -9,9 +9,9 @@ const HTTP_PORT = process.env.HTTP_PORT || 3001;
 
 const app = express();
 const bc = new Blockchain();
-const p2pServer = new P2pServer(bc);
 const wallet = new Wallet();
 const tp = new TransactionPool();
+const p2pServer = new P2pServer(bc, tp);
 
 app.use(bodyParser.json());
 
@@ -31,11 +31,16 @@ app.post('/mine', (req, res) => {
 app.get('/transactions', (req, res) => {
     res.json(tp.transactions);
   });
-  
+
 app.post('/transact', (req, res) => {
   const { recipient, amount } = req.body;
   const transaction = wallet.createTransaction(recipient, amount, tp);
+  p2pServer.broadcastTransaction(transaction);
   res.redirect('/transactions');
+});
+
+app.get('/public_key', (req, res) => {
+    res.json({ publicKey: wallet.publicKey });
 });
 
 app.listen(HTTP_PORT, () => console.log(`Listening on port: ${HTTP_PORT}`));
